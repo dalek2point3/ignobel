@@ -38,42 +38,81 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Step 1: Scrape Ig Nobel Winners
+### Step 1: Parse Ig Nobel Winners from HTML
 ```bash
-python src/01_scrape_winners.py
+python src/parse_html_winners.py
 ```
 
-### Step 2: Enrich with Publication Details
+This extracts all 345 Ig Nobel winners (1991-2025) from the saved HTML file into `data/all_ig_nobel_winners.csv`.
+
+**Output**: 345 winners, 64 with DOIs (18.6%), 281 without DOIs
+
+### Step 2: Collect Citations from OpenAlex
+
+**Test mode** (recommended first - processes 10 papers):
 ```bash
-python src/02_enrich_papers.py
+python src/05_collect_citations_openalex.py
 ```
 
-### Step 3: Collect Citations
+**Custom test limit** (e.g., 50 papers):
 ```bash
-python src/03_collect_citations.py
+python src/05_collect_citations_openalex.py --limit 50
 ```
 
-### Step 4: Generate Final Dataset
+**Full mode** (all 345 papers):
 ```bash
-python src/04_generate_dataset.py
+python src/05_collect_citations_openalex.py --full
 ```
 
-Or run all steps:
-```bash
-python src/run_all.py
-```
+**Requirements**:
+- Internet connectivity to access OpenAlex API
+- No proxy/firewall blocking api.openalex.org
+- The script uses polite pool access (9 req/sec) with proper attribution
+
+**How it works**:
+- For papers **with DOIs** (64 papers): Direct lookup via OpenAlex DOI endpoint
+- For papers **without DOIs** (281 papers): Title-based search with year filtering
+- Uses cursor pagination to retrieve all citations (no limits)
+- Saves progress incrementally to avoid data loss
+- Extracts comprehensive citation metadata including temporal information
+
+**Output**: `output/openalex_citations.csv` and `output/openalex_citations.json`
 
 ## Data Sources
 
-- **Ig Nobel Winners**: [Improbable Research](https://improbable.com/ig/winners/)
-- **Wikipedia**: [List of Ig Nobel Prize winners](https://en.wikipedia.org/wiki/List_of_Ig_Nobel_Prize_winners)
-- **Citation Data**: CrossRef API, Semantic Scholar API, Google Scholar
-- **Recent Winners**:
-  - [2024 Ig Nobel Prizes](https://www.chemistryviews.org/2024-ig-nobel-prize-winners/)
-  - [2023 Ig Nobel Prizes](https://www.chemistryviews.org/2023-ig-nobel-prizes-honor-unusual-research/)
+- **Ig Nobel Winners**: Saved HTML from [Improbable Research](https://improbable.com/ig/winners/)
+- **Citation Data**: [OpenAlex API](https://docs.openalex.org/) - comprehensive, free, open bibliographic database
 
-## Notes
+## Current Status
 
-- The scraping process may take time due to rate limits on scholarly APIs
-- Some older Ig Nobel prizes (pre-2000s) may not have DOIs readily available
-- Citation data completeness depends on availability in scholarly databases
+✅ **Completed**:
+- Parsed all 345 Ig Nobel winners (1991-2025) from HTML
+- Created comprehensive citation collector for OpenAlex API
+- Implemented dual lookup strategy (DOI + title search)
+- Built robust error handling and progress tracking
+- Test mode validated (code executes correctly)
+
+⏳ **Pending**:
+- Run citation collection in environment with internet access
+- Generate final dataset with two tables (awarded papers + citations)
+
+## Notes & Limitations
+
+### Paper Coverage
+- **Total papers**: 345 (1991-2025)
+- **Papers with DOIs**: 64 (18.6%) - can be looked up directly
+- **Papers without DOIs**: 281 (81.4%) - require title-based search
+- Some years have exactly 10 prizes, a few have 8-9 (typical of Ig Nobel structure)
+
+### Citation Collection
+- Requires internet access to OpenAlex API (api.openalex.org)
+- Rate limited to ~9 requests/second (polite pool access)
+- Title search may have false positives for papers without DOIs
+- Estimated runtime for full collection: ~2-3 hours (depends on citation counts)
+- Script saves progress incrementally to prevent data loss
+
+### Data Quality
+- OpenAlex has excellent coverage of modern papers (2000+)
+- Older papers (1991-1999) may have limited citation data
+- Some Ig Nobel "papers" are demonstrations or exhibits without formal publications
+- Citation data includes pre-award and post-award citations for temporal analysis
