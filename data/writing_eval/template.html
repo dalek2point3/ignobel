@@ -72,12 +72,12 @@ const esc = s => String(s).replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">"
 function stats(t){
   const paras = t.split(/\n\s*\n/).filter(p=>p.trim());
   const words = t.split(/\s+/).filter(Boolean).length;
-  const sents = (t.match(/[^.!?]+[.!?]+(?=\s|$)/g)||[]).length || 1;
+  const sents = paras.reduce((n,p)=>n+(p.replace(/^\s*\d+\.\s+/,"").match(/[^.!?]+[.!?]+(?=\s|$)/g)||[]).length,0) || 1;
   return {paras, words, sents, avg:(words/sents).toFixed(1)};
 }
 function render(side, id){
   const col = document.getElementById("col"+side);
-  const opts = PIECES.map(p=>`<option value="${p.piece_id}" ${p.piece_id==id?"selected":""}>${esc(p.condition)} — ${esc(p.author)}</option>`).join("");
+  const opts = PIECES.map(p=>`<option value="${p.piece_id}" ${p.piece_id==id?"selected":""}>${esc(p.condition)} — ${esc(p.author)}${p.model?` (${esc(p.model)})`:""}</option>`).join("");
   const p = PIECES.find(x=>x.piece_id==id);
   const s = stats(p.text);
   col.innerHTML = `
@@ -90,7 +90,7 @@ function render(side, id){
         <div><b>${s.sents}</b><span>Sentences</span></div>
         <div><b>${s.avg}</b><span>Words / sentence</span></div>
       </div>
-      <div class="prompt"><div class="lbl">Prompt</div>${p.prompt?`<pre>${esc(p.prompt)}</pre>`:`<div class="none">No prompt — human-written original</div>`}</div>
+      <div class="prompt"><div class="lbl">Prompt</div>${p.prompt?`<pre>${esc(p.prompt)}</pre>`:`<div class="none">${cls(p.condition)==="orig"?"No prompt — human-written original":"Prompt not recorded"}</div>`}</div>
       <div class="lbl out">Output</div>
       ${p.title?`<h2>${esc(p.title)}</h2>`:`<h2 class="none">Untitled</h2>`}
       <div class="text">${s.paras.map((t,i)=>`<p><span class="pn">¶${i+1}</span>${esc(t.trim())}</p>`).join("")}</div>
